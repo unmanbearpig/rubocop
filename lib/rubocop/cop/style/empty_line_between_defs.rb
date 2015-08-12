@@ -9,20 +9,38 @@ module RuboCop
         MSG = 'Use empty lines between defs.'
 
         def on_def(node)
-          if @prev_def_end && (def_start(node) - @prev_def_end) == 1
-            unless @prev_was_single_line && singe_line_def?(node) &&
-                   cop_config['AllowAdjacentOneLineDefs']
-              add_offense(node, :keyword)
-            end
-          end
+          nodes = [prev_node(node), node]
 
-          @prev_def_end = def_end(node)
-          @prev_was_single_line = singe_line_def?(node)
+          return unless nodes.all?(&method(:def_node?))
+          return if blank_lines_between?(*nodes)
+
+          unless nodes.all?(&method(:single_line_def?)) &&
+                 cop_config['AllowAdjacentOneLineDefs']
+            add_offense(node, :keyword)
+          end
         end
 
         private
 
-        def singe_line_def?(node)
+        def def_node?(node)
+          node && node.type == :def
+        end
+
+        def blank_lines_between?(first_def_node, second_def_node)
+          lines_between_defs(first_def_node, second_def_node).any?(&:empty?)
+        end
+
+        def prev_node(node)
+          return nil unless node.parent && node.sibling_index > 0
+
+          node.parent.children[node.sibling_index-1]
+        end
+
+        def lines_between_defs first_def_node, second_def_node
+          processed_source.lines[def_end(first_def_node)..def_start(second_def_node)-2]
+        end
+
+        def single_line_def?(node)
           def_start(node) == def_end(node)
         end
 

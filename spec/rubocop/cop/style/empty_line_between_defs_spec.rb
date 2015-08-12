@@ -110,6 +110,30 @@ describe RuboCop::Cop::Style::EmptyLineBetweenDefs, :config do
                              '  def b; end'].join("\n"))
   end
 
+  it 'finds offenses for adjacent multi-liners' do
+    source = ['  class J',
+              '    def n',
+              '    end',
+              '    def o',
+              '    end',
+              '  end']
+    inspect_source(cop, source)
+    expect(cop.offenses.size).to eq(1)
+  end
+
+  it 'finds offenses for adjacent multi-liners with comments' do
+    source = ['  class J',
+              '    # checks something n-related',
+              '    def n',
+              '    end',
+              '    # checks something o-related',
+              '    def o',
+              '    end',
+              '  end']
+    inspect_source(cop, source)
+    expect(cop.offenses.size).to eq(1)
+  end
+
   context 'when AllowAdjacentOneLineDefs is enabled' do
     let(:cop_config) { { 'AllowAdjacentOneLineDefs' => true } }
 
